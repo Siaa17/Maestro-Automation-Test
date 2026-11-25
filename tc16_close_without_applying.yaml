@@ -1,0 +1,78 @@
+# TC-16 - The Close (X) icon returns without applying changes.
+#
+# Adapted to the current app: Filters is opened from the Home screen
+# (no Filters icon on Search - BUG-01), so the "5 items" check is left out.
+#
+# Expected to FAIL at the Price chip check because of BUG-05
+# (Close (X) keeps the unapplied filter selections).
+#
+# Selectors:
+# - `below: "LifeStyle"` - chip names also appear on the Home screen.
+# - `containsChild` + `checked: true` - the state is on the chip
+#   or sort row container, not on its text. "Not selected" = assertNotVisible.
+# - Texts are regex: "$" and "(" must be escaped.
+
+appId: com.example.jetsnack
+name: "TC-16 - Close (X) returns without applying changes"
+---
+# Precondition: fresh app, nothing selected.
+- launchApp:
+    clearState: true
+
+# Step 2 - open the Filters modal.
+- tapOn: "Filters"
+- assertVisible:
+    containsChild: "Android's favorite \\(default\\)"
+    checked: true
+
+# Step 3 - select "Alphabetical", "$$" and "Organic".
+- tapOn: "Alphabetical"
+- tapOn: "\\$\\$"
+- scrollUntilVisible:
+    element: "LifeStyle"
+- tapOn:
+    text: "Organic"
+    below: "LifeStyle"
+
+# Check that all three are selected before closing.
+- assertVisible:
+    containsChild: "Organic"
+    below: "LifeStyle"
+    checked: true
+- scrollUntilVisible:
+    element: "Close"
+    direction: UP
+- assertVisible:
+    containsChild: "Alphabetical"
+    checked: true
+- assertVisible:
+    containsChild: "\\$\\$"
+    checked: true
+- takeScreenshot: tc16_1_selected_before_close
+
+# Step 4 - tap Close (X). The modal closes.
+- tapOn: "Close"
+- assertNotVisible: "Sort"
+
+# Step 5 - open Filters again.
+- tapOn: "Filters"
+- takeScreenshot: tc16_2_reopened
+
+# Expected: the default sort has the check mark, Alphabetical does not.
+- assertVisible:
+    containsChild: "Android's favorite \\(default\\)"
+    checked: true
+- assertNotVisible:
+    containsChild: "Alphabetical"
+    checked: true
+
+# Expected: nothing is selected. Fails here today because of BUG-05.
+- assertNotVisible:
+    containsChild: "\\$\\$"
+    checked: true
+- scrollUntilVisible:
+    element: "LifeStyle"
+- assertNotVisible:
+    containsChild: "Organic"
+    below: "LifeStyle"
+    checked: true
